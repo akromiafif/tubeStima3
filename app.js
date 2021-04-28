@@ -19,6 +19,7 @@ app.get('/proccess/:taskDesc', function(req, res) {
   let result = EngineTask3(req.params.taskDesc.trim());
   console.log(req.params.taskDesc.trim());
 
+  console.log(result);
   res.send(result);
 });
  
@@ -458,6 +459,29 @@ function EngineTask2(inputString) {
   // }
 }
 
+function ExecuteTask3(kodeMatkul, callback){
+  let sql = `SELECT tanggal FROM jadwal WHERE kode='${kodeMatkul[0][0]}'`;
+  DB.con.query(sql, (err, res) => {
+    if (!err) {    
+      if (res.length != 0) {
+        let result = JSON.parse(JSON.stringify(res));
+        let arrRes = [];
+
+        result.forEach((item) => {
+          // console.log(formatDate(new Date(item.tanggal)));
+          arrRes.push(formatDate(new Date(item.tanggal)));
+        });
+        
+        console.log("Task ditemukan");
+        callback(null, arrRes);
+      } else {
+        console.log("Task tidak ditemukan");
+        callback(false, null);
+      }
+    }
+  });
+}
+
 function EngineTask3(inputString) {
   let kataKunci = ['Kapan', 'Bila', 'Waktu', 'Ketika'];
   let kodeMatkul = getIDMatkul(inputString);
@@ -475,33 +499,14 @@ function EngineTask3(inputString) {
       return false;
     } else {
       if (kunci != " ") {
-        // DB.con.connect((err) => {
-          // if (!err) {
-            let sql = `SELECT tanggal FROM jadwal WHERE kode='${kodeMatkul[0][0]}'`;
-    
-            DB.con.query(sql, (err, res) => {
-              if (!err) {    
-                if (res.length != 0) {
-                  let result = JSON.parse(JSON.stringify(res));
-                  let arrRes = [];
+        let resArr = ["Hello"];
 
-                  result.forEach((item) => {
-                    // console.log(formatDate(new Date(item.tanggal)));
-                    arrRes.push(formatDate(new Date(item.tanggal)));
-                  });
-                  
-                  console.log("Masuk sini");
-                  return false;
-                } else {
-                  console.log("Task tidak ditemukan");
-                  return false;
-                }
-              }
-            });
-          // } else {
-          //   return false;
-          // }
-        // });
+        resArr = ExecuteTask3(kodeMatkul, function(err, result) {
+          resArr = result;
+          console.log(result);
+        });
+
+        return resArr;
       } else {
         // console.log("Tidak valid");
         return false;
