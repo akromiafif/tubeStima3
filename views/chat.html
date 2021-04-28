@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Chatbot</title>
+<style>
+  body { 
+  color: #421; 
+  font-weight: bold; 
+  font-size: 18px; 
+  font-family: "Courier New"; 
+  background: rgb(200, 232, 241); 
+  }
+
+  body::after {
+    content: "";
+    background-repeat: repeat-y; 
+    opacity: 0.5;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    z-index: -1;   
+  }
+
+  span { 
+    color: rgb(36, 17, 119); 
+  } 
+
+  ::-webkit-input-placeholder { 
+    color: #711 
+  }
+
+  #main { 
+    position: fixed; 
+    top: 40%; 
+    right: 200px; 
+    width: 400px; 
+    border: 0px solid #421; 
+    padding: 40px; 
+  }
+
+  #main div { 
+    margin: 10px; 
+  } 
+
+  #input { 
+    border: 0; 
+    padding: 5px; 
+    border: 1px solid #421; 
+  }
+</style>
+</head>
+<body>
+<div id="main">
+  <div><input id="input" type="text" placeholder="Say something..." autocomplete="off"/></div>
+  <div id="user"></div>
+</div>
+</body>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  document.querySelector("#input").addEventListener("keydown", function(e) {
+    if (e.code === "Enter") {
+      console.log("You clicked the form and pressed the enter button!");
+    }
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const inputField = document.getElementById("input")
+    inputField.addEventListener("keydown", function(e) {
+      if (e.code === "Enter") {
+        let input = document.getElementById("input").value;
+        // console.log(input);
+        
+        makeGetRequest(input);
+      }
+    });
+  });
+
+  function addChat(input, response) {
+    const mainDiv = document.getElementById("main");
+    let userDiv = document.createElement("div");
+    userDiv.id = "user";
+    userDiv.innerHTML = `You: <span id="user-response">${input}</span>`;
+    mainDiv.appendChild(userDiv);
+
+    let botDiv = document.createElement("div");
+    botDiv.id = "bot";
+    botDiv.innerHTML = `Chatbot: <span id="bot-response">${response}</span>`;
+    mainDiv.appendChild(botDiv);
+  }
+
+  async function makeGetRequest(inputString) {
+    let payload = { input: inputString};
+    let res = await axios.get('/proccess/'+inputString);
+    let data = res.data;
+  
+    addChat(inputString, data);
+    console.log(res);
+  }
+
+</script>
+</html>
