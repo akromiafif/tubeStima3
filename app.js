@@ -2,13 +2,16 @@ const express = require('express');
 const bodyParser = require("body-parser");
 const router = express.Router();
 const app = express();
+const DB = require('./database.js');
+
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use("/", router);
+app.use(express.static(__dirname + '/public'));
 
 app.get('/', function (req, res) {
-  res.send("Hello World");
+  res.sendFile('./views/index.html', { root: __dirname });
 });
 
 app.get('/chat', function (req, res) {
@@ -16,34 +19,35 @@ app.get('/chat', function (req, res) {
 });
 
 app.get('/proccess/:taskDesc', function(req, res) {
-  let result = EngineTask3(req.params.taskDesc.trim());
-  console.log(req.params.taskDesc.trim());
-
-  console.log(result);
-  res.send(result);
+  runAllMain(req.params.taskDesc.trim(), res);
 });
  
 app.listen(3000);
 
-
-
-function runAllMain(inputString) {
-  let task1 = EngineTask1(inputString);
-  // let task2 = EngineTask1(inputString);
-  let task3 = EngineTask3(inputString);
-  let task4 = EngineTask4(inputString);
-  let task5 = EngineTask5(inputString);
+function runAllMain(inputString, resObj) {
+  let task1 = EngineTask1(inputString, resObj);
+  let task3 = EngineTask3(inputString, resObj);
+  let task4 = EngineTask4(inputString, resObj);
+  let task5 = EngineTask5(inputString, resObj);
 
   let result = [];
   result.push(task1);
-  // result.push(task2);
   result.push(task3);
   result.push(task4);
   result.push(task5);
 
   console.log(result);
 
-  return result;
+  let isAllInvalid = true;
+  result.forEach((item) => {
+    if (item == undefined) {
+      isAllInvalid = false;
+    }
+  });
+
+  if (isAllInvalid) {
+    resObj.send("Bot tidak bisa memahami perintah");
+  }
 }
 
 
@@ -51,22 +55,7 @@ function runAllMain(inputString) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // =================================== ENGINE ===================================
-let mysql = require('mysql');
-const DB = require('./database.js');
 
 // DB.createDatabase();
 // DB.createTable();
@@ -208,7 +197,18 @@ function formatDate(date) {
   }
 }
 
-function EngineTask1(inputString) {
+function getConvert(inputString, rgxPtr) {
+  let result = inputString.matchAll(rgxPtr);
+  result = Array.from(result);
+
+  if (result.length > 0) {
+    return result[0][0].split(" ")[0];
+  } else {
+    return false;
+  }
+}
+
+function EngineTask1(inputString, resObj) {
   let kataKunci = ['Kuis', 'Ujian', 'Tucil', 'Tubes', 'Praktikum'];
   let arrIDMatkul = getIDMatkul(inputString);
   let arrDate = getAllDate(inputString);
@@ -245,7 +245,7 @@ function EngineTask1(inputString) {
   }
   
   if (tugas && arrIDMatkul && singleDate && (desc != "")) {
-    let resTask1 = `[TASK BERHASIL DICATAT] \n
+    let resTask1 = `[TASK BERHASIL DICATAT] \n \n
     (ID: 1) - ${singleDate.toLocaleDateString()} - ${arrIDMatkul[0]} - ${tugas} - ${getDescription(inputString, arrIDMatkul[1])}`;
     
     console.log("[TASK BERHASIL DICATAT]");
@@ -255,234 +255,14 @@ function EngineTask1(inputString) {
     
     DB.insertToDB(id_tugas, date, arrIDMatkul[0], tugas, getDescription(inputString, arrIDMatkul[1]).trim(), status);
     
-    return resTask1;
+    resObj.send(resTask1);
   } else {
     console.log("Non Valid");
     return false;
   }
 }
 
-function getConvert(inputString, rgxPtr) {
-  let result = inputString.matchAll(rgxPtr);
-  result = Array.from(result);
-
-  if (result.length > 0) {
-    return result[0][0].split(" ")[0];
-  } else {
-    return false;
-  }
-}
-
-
-function EngineTask2(inputString) {
-  let ptrRegexWeek = /\d{1,}\sminggu/g;
-  let ptrRegexDay = /\d{1,}\shari/g;
-
-  // a. Seluruh task yang sudah tercatat oleh assistant
-  // Contoh perintah yang dapat digunakan: “Apa saja deadline yang dimiliki
-  // sejauh ini?”
-
-  let kataKunci = ['hari ini'];
-
-  let kataKunciA = ['milik'];
-  let kataKunciB = ['antara'];
-  let kataKunciC = ['minggu ke depan'];
-  let id_tugas = getIDTask(inputString);
-  let id_date = getAllDate(inputString);
-  let timeNow = new Date();
-  let dateNow = formatDate(timeNow);
-
-  let convertDay = getConvert(inputString, ptrRegexDay);
-  let convertWeek = getConvert(inputString, ptrRegexWeek);
-
-  kataKunci.forEach((item) => {
-    let result = KMP(inputString, item);
-
-    if (result != -1) {
-      kataKunci = item;
-    } else {
-      kataKunci = false;
-    }
-  });
-
-  if (kataKunci != false) {
-    DB.con.connect((err) => {  
-      if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE tanggal='${dateNow}'`;
-      DB.con.query(sql, (err, res) => {
-        if (!err) {
-          res.forEach((item) => {
-            let x = JSON.parse(JSON.stringify(item));
-            let newDate = new Date(x.tanggal);
-            newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
-
-            console.log("ID : "+x.id);
-            console.log("ID TUGAS : "+x.id_tugas);
-            console.log("TANGGAL : "+ newDate);
-            console.log("KODE : "+x.kode);
-            console.log("NAMA TUGAS : "+x.nama_tugas);
-            console.log("DESKRIPSI : "+x.deskripsi);
-            console.log("STATUS : "+x.status+"\n");
-          });
-        }
-      });
-    });
-  }
-
-  if (convertDay != false) {
-    convertDay = parseInt(convertDay) * 86400000;
-    convertDay = new Date(timeNow.getTime() + convertDay);
-
-    let dateLater = formatDate(convertDay);
-
-    DB.con.connect((err) => {  
-      if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
-      DB.con.query(sql, (err, res) => {
-        if (!err) {
-          res.forEach((item) => {
-            let x = JSON.parse(JSON.stringify(item));
-            let newDate = new Date(x.tanggal);
-            newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
-
-            console.log("ID : "+x.id);
-            console.log("ID TUGAS : "+x.id_tugas);
-            console.log("TANGGAL : "+ newDate);
-            console.log("KODE : "+x.kode);
-            console.log("NAMA TUGAS : "+x.nama_tugas);
-            console.log("DESKRIPSI : "+x.deskripsi);
-            console.log("STATUS : "+x.status+"\n");
-          });
-        }
-      });
-    });
-  }
-
-  if (convertWeek != false) {
-    convertWeek = parseInt(convertWeek) * 7 * 86400000;
-    convertWeek = new Date(timeNow.getTime() + convertWeek);
-
-    let dateLater = `${convertWeek.getFullYear()}-${convertWeek.getMonth()+1}-${convertWeek.getDate()}`;
-
-    DB.con.connect((err) => {  
-      if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
-      DB.con.query(sql, (err, res) => {
-        if (!err) {
-          res.forEach((item) => {
-            let x = JSON.parse(JSON.stringify(item));
-            let newDate = new Date(x.tanggal);
-            newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
-
-            console.log("ID : "+x.id);
-            console.log("ID TUGAS : "+x.id_tugas);
-            console.log("TANGGAL : "+ newDate);
-            console.log("KODE : "+x.kode);
-            console.log("NAMA TUGAS : "+x.nama_tugas);
-            console.log("DESKRIPSI : "+x.deskripsi);
-            console.log("STATUS : "+x.status+"\n");
-          });
-        }
-      });
-    });
-  }
-
-  // let date1 = id_date[0][0].getDate()+"/"+(id_date[0][0].getMonth()+1)+"/"+id_date[0][0].getFullYear();
-  // let date2 = id_date[0][1].getDate()+"/"+(id_date[0][1].getMonth()+1)+"/"+id_date[0][1].getFullYear();
-  
-  // let newDate = new Date(id_date[0]);
-  // console.log(newDate);
-  // console.log(newDate.getTime());
-  // let mil = newDate.getTime() + 86400000;
-  // console.log(mil);
-  // let newDate2 = new Date(mil);
-  // console.log(newDate2.toDateString());
-  // let kunciA = " ";
-  // let kunciB = " ";
-  // let kunciC = " ";
-
-  // kataKunciA.forEach((item) => {
-  //   if (KMP(inputString, item) != -1) {
-  //     kunciA = item;
-  //   }
-  // });
-
-  // kataKunciB.forEach((item) => {
-  //   if (KMP(inputString, item) != -1) {
-  //     kunciB = item;
-  //   }
-  // });
-
-
-  // if (kunciA != " ") {
-  //   DB.con.connect((err) => {  
-  //     if (err) throw err;
-  //     let sql = `SELECT * FROM jadwal`;
-  
-  //     DB.con.query(sql, (err, res) => {
-  //       if (!err) {    
-  //         res.forEach((item) => {
-  //           let x = JSON.parse(JSON.stringify(item));
-  //           console.log("ID : "+x.id);
-  //           console.log("ID TUGAS : "+x.id_tugas);
-  //           console.log("TANGGAL : "+x.tanggal);
-  //           console.log("KODE : "+x.kode);
-  //           console.log("NAMA TUGAS : "+x.nama_tugas);
-  //           console.log("DESKRIPSI : "+x.deskripsi);
-  //           console.log("STATUS : "+x.status+"\n");
-  //         });
-  //       }
-  //     });
-  //   });
-  // }
-  // if (kunciB != " ") {
-  //   DB.con.connect((err) => {  
-  //     if (err) throw err;
-  //     let sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${date1}' AND '${date2}'`;
-  //     // console.log(date1);
-  //     // console.log(date2);
-  //     DB.con.query(sql, (err, res) => {
-  //       if (!err) {
-  //         res.forEach((item) => {
-  //           let x = JSON.parse(JSON.stringify(item));
-  //           console.log("ID : "+x.id);
-  //           console.log("ID TUGAS : "+x.id_tugas);
-  //           console.log("TANGGAL : "+x.tanggal);
-  //           console.log("KODE : "+x.kode);
-  //           console.log("NAMA TUGAS : "+x.nama_tugas);
-  //           console.log("DESKRIPSI : "+x.deskripsi);
-  //           console.log("STATUS : "+x.status+"\n");
-  //         });
-  //       }
-  //     });
-  //   });
-  // }
-}
-
-function ExecuteTask3(kodeMatkul, callback){
-  let sql = `SELECT tanggal FROM jadwal WHERE kode='${kodeMatkul[0][0]}'`;
-  DB.con.query(sql, (err, res) => {
-    if (!err) {    
-      if (res.length != 0) {
-        let result = JSON.parse(JSON.stringify(res));
-        let arrRes = [];
-
-        result.forEach((item) => {
-          // console.log(formatDate(new Date(item.tanggal)));
-          arrRes.push(formatDate(new Date(item.tanggal)));
-        });
-        
-        console.log("Task ditemukan");
-        callback(null, arrRes);
-      } else {
-        console.log("Task tidak ditemukan");
-        callback(false, null);
-      }
-    }
-  });
-}
-
-function EngineTask3(inputString) {
+function EngineTask3(inputString, resObj) {
   let kataKunci = ['Kapan', 'Bila', 'Waktu', 'Ketika'];
   let kodeMatkul = getIDMatkul(inputString);
   let kunci = " ";
@@ -499,26 +279,39 @@ function EngineTask3(inputString) {
       return false;
     } else {
       if (kunci != " ") {
-        let resArr = ["Hello"];
+        let sql = `SELECT tanggal FROM jadwal WHERE kode='${kodeMatkul[0][0]}'`;
 
-        resArr = ExecuteTask3(kodeMatkul, function(err, result) {
-          resArr = result;
-          console.log(result);
+        DB.connection.query(sql, (err, res) => {
+          if (!err) {    
+            if (res.length != 0) {
+              let result = JSON.parse(JSON.stringify(res));
+              let arrRes = [];
+      
+              result.forEach((item) => {
+                // console.log(formatDate(new Date(item.tanggal)));
+                arrRes.push(formatDate(new Date(item.tanggal)));
+              });
+              
+              console.log("Task ditemukan");
+              resObj.send(arrRes);
+            } else {
+              console.log("Task tidak ditemukan");
+              resObj.send("Task tidak ditemukan");
+            }
+          }
         });
-
-        return resArr;
       } else {
-        // console.log("Tidak valid");
-        return false;
+        console.log("Tidak valid");
+        return false
       }
     }
   } else {
-    // console.log("Tidak aman");
-    return false;
+    console.log("Tidak aman");
+    return false
   }
 }
 
-function EngineTask4(inputString) {
+function EngineTask4(inputString, resObj) {
   let arrDate = getAllDate(inputString);
   let id_task = getIDTask(inputString);
   let date = formatDate(arrDate[0]);
@@ -528,29 +321,28 @@ function EngineTask4(inputString) {
     // console.log("Tidak Valid");
     return false;
   } else {
-    DB.con.connect((err) => {  
-      if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE id_tugas='${id_task[0][0]}'`;
-  
-      DB.con.query(sql, (err, res) => {
-        if (!err) {  
-          if (res.length != 0) {
-              let sql = `UPDATE jadwal SET tanggal = '${date}' WHERE id_tugas = '${id_task[0][0]}'`;
-              DB.con.query(sql, function (err, result) {
-                if (err) throw err;
-                console.log(result.affectedRows + " record(s) updated");
-              });
-            
-          } else {
-            console.log("Task tidak ditemukan");
-          }
+    let sql = `SELECT * FROM jadwal WHERE id_tugas='${id_task[0][0]}'`;
+
+    DB.connection.query(sql, (err, res) => {
+      if (!err) {  
+        if (res.length != 0) {
+            let sql = `UPDATE jadwal SET tanggal = '${date}' WHERE id_tugas = '${id_task[0][0]}'`;
+            DB.connection.query(sql, function (err, result) {
+              if (err) throw err;
+              console.log(result.affectedRows + " record(s) updated");
+            });
+            resObj.send(`${id_task[0][0]} berhasil di update ke tanggal ${date}`);
+          
+        } else {
+          console.log("Task tidak ditemukan");
+          resObj.send("Task tidak ditemukan");
         }
-      });
+      }
     });
   }
 }
 
-function EngineTask5(text){
+function EngineTask5(text, resObj){
   let kataKunci = ['selesai', 'sudah', 'tuntas', 'telah', 'beres','kelar','rampung','mari'];
   let id_tugas = getIDTask(text);
   let isKataKunciExist = false;
@@ -567,24 +359,22 @@ function EngineTask5(text){
     console.log("Masukan invalid, silahkan masukkan 1 id_tugas saja");
     return false;
   }else{
-    DB.con.connect((err) => {  
-      if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE id_tugas='${id_tugas[0][0]}'`;
-  
-      DB.con.query(sql, (err, res) => {
-        if (!err) {  
-          if (res.length != 0) {
-              let sql = `UPDATE jadwal SET status = 'T' WHERE id_tugas = '${id_tugas[0][0]}'`;
-              DB.con.query(sql, function (err, result) {
-                if (err) throw err;
-                console.log(result.affectedRows + " record(s) updated");
-              });
-            
-          } else {
-            console.log("Task tidak ditemukan");
-          }
+    let sql = `SELECT * FROM jadwal WHERE id_tugas='${id_tugas[0][0]}'`;
+
+    DB.connection.query(sql, (err, res) => {
+      if (!err) {  
+        if (res.length != 0) {
+            let sql = `UPDATE jadwal SET status = 'T' WHERE id_tugas = '${id_tugas[0][0]}'`;
+            DB.connection.query(sql, function (err, result) {
+              if (err) throw err;
+              console.log(result.affectedRows + " record(s) updated");
+              resObj.send(`ID Tugas ${id_tugas[0][0]} berhasil di update ke selesai`)
+            });
+        } else {
+          console.log("Task tidak ditemukan");
+          resObj.send("Task tidak ditemukan");
         }
-      });
+      }
     });
   }
 }
