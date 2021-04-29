@@ -280,7 +280,7 @@ function EngineTask2(inputString, resObj) {
   let id_date = getAllDate(inputString);
   let timeNow = new Date();
   let dateNow = formatDate(timeNow);
-
+  let resTask2 = "";
   let convertDay = getConvert(inputString, ptrRegexDay);
   let convertWeek = getConvert(inputString, ptrRegexWeek);
 
@@ -324,9 +324,9 @@ function EngineTask2(inputString, resObj) {
         res.forEach((item) => {
           let x = JSON.parse(JSON.stringify(item));
           let newDate = new Date(x.tanggal);
-          newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
-          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
-          resObj.send(resTask2);
+          newDate = `${newDate.getDate()}/${newDate.getMonth()+1}/${newDate.getFullYear()}`;
+          resTask2+=( "ID : "+x.id+"<br>ID TUGAS :  "+x.id_tugas+"<br> TANGGAL : "+ newDate+"<br> KODE : "+x.kode+"<br> NAMA TUGAS : "+x.nama_tugas+"<br> DESKRIPSI : "+x.deskripsi+"<br> STATUS : "+x.status+"<br><br>");
+          // console.log(resTask2);
           // console.log("ID : "+x.id);
           // console.log("ID TUGAS : "+x.id_tugas);
           // console.log("TANGGAL : "+ newDate);
@@ -334,11 +334,15 @@ function EngineTask2(inputString, resObj) {
           // console.log("NAMA TUGAS : "+x.nama_tugas);
           // console.log("DESKRIPSI : "+x.deskripsi);
           // console.log("STATUS : "+x.status+"\n");
+
         });
-      }else{
-        return false;
+        resObj.send(resTask2);
+      }  else{
+        resObj.send("tidak ada deadline");
       }
+      
     });
+    return 0;
   };
   
 
@@ -365,14 +369,16 @@ function EngineTask2(inputString, resObj) {
         res.forEach((item) => {
           let x = JSON.parse(JSON.stringify(item));
           let newDate = new Date(x.tanggal);
-          newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
-          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
-          resObj.send(resTask2);
+          newDate = `${newDate.getDate()}/${newDate.getMonth()+1}/${newDate.getFullYear()}`;
+          resTask2+=( "ID : "+x.id+"<br>ID TUGAS :  "+x.id_tugas+"<br> TANGGAL : "+ newDate+"<br> KODE : "+x.kode+"<br> NAMA TUGAS : "+x.nama_tugas+"<br> DESKRIPSI : "+x.deskripsi+"<br> STATUS : "+x.status+"<br><br>");
         });
+        resObj.send(resTask2);
       }else{
-        return false;
+        resObj.send("tidak ada deadline");
       }
+
     });
+    return 0;
   };
   
 
@@ -394,25 +400,27 @@ function EngineTask2(inputString, resObj) {
     }else{
       sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
     }
+    // console.log(dateNow);
+    // console.log(dateLater);
     DB.connection.query(sql, (err, res) => {
       if (!err) {
         res.forEach((item) => {
           let x = JSON.parse(JSON.stringify(item));
           let newDate = new Date(x.tanggal);
-          newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
-          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
-          resObj.send(resTask2);
+          newDate = `${newDate.getDate()}/${newDate.getMonth()+1}/${newDate.getFullYear()}`;
+          resTask2+=( "ID : "+x.id+"<br>ID TUGAS :  "+x.id_tugas+"<br> TANGGAL : "+ newDate+"<br> KODE : "+x.kode+"<br> NAMA TUGAS : "+x.nama_tugas+"<br> DESKRIPSI : "+x.deskripsi+"<br> STATUS : "+x.status+"<br><br>");
         });
-      }else{
-        return false;
+        // console.log(resTask2);
+        resObj.send(resTask2);
       }
     });
+    return 0;
   };
 
-  let date1 = id_date[0][0].getDate()+"/"+(id_date[0][0].getMonth()+1)+"/"+id_date[0][0].getFullYear();
-  let date2 = id_date[0][1].getDate()+"/"+(id_date[0][1].getMonth()+1)+"/"+id_date[0][1].getFullYear();
+  let date1 = id_date[0][0].getFullYear()+"-"+(id_date[0][0].getMonth()+1)+"-"+ id_date[0][0].getDate();
+  let date2 = id_date[0][1].getFullYear()+"-"+(id_date[0][1].getMonth()+1)+"-"+ id_date[0][1].getDate();
   
-  // let newDate = new Date(id_date[0]);
+  let newDate = new Date(id_date[0]);
   // console.log(newDate);
   // console.log(newDate.getTime());
   // let mil = newDate.getTime() + 86400000;
@@ -461,19 +469,22 @@ function EngineTask2(inputString, resObj) {
     // console.log(date1);
     // console.log(date2);
     DB.connection.query(sql, (err, res) => {
-      console.log(res);
+      // console.log(res);
       if (!err) {
         res.forEach((item) => {
           let x = JSON.parse(JSON.stringify(item));
-          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
-          resObj.send(resTask2);
+          let newDate = new Date(x.tanggal);
+          newDate = `${newDate.getDate()}/${newDate.getMonth()+1}/${newDate.getFullYear()}`;
+          resTask2+=( "ID : "+x.id+"<br>ID TUGAS :  "+x.id_tugas+"<br> TANGGAL : "+ newDate+"<br> KODE : "+x.kode+"<br> NAMA TUGAS : "+x.nama_tugas+"<br> DESKRIPSI : "+x.deskripsi+"<br> STATUS : "+x.status+"<br><br>");
+          
         });
+        // console.log(resTask2);
+        resObj.send(resTask2);
       }
     });
+    return 0;
   };
   }
-
-
 function EngineTask3(inputString, resObj) {
   let kataKunci = ['Kapan', 'Bila', 'Waktu', 'Ketika'];
   let kodeMatkul = getIDMatkul(inputString);
