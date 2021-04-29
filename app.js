@@ -19,19 +19,21 @@ app.get('/chat', function (req, res) {
 });
 
 app.get('/proccess/:taskDesc', function(req, res) {
-  runAllMain(req.params.taskDesc.trim(), res);
+  EngineTask2(req.params.taskDesc.trim(), res);
 });
  
 app.listen(3000);
 
 function runAllMain(inputString, resObj) {
   let task1 = EngineTask1(inputString, resObj);
+  let task2 = EngineTask2(inputString, resObj);
   let task3 = EngineTask3(inputString, resObj);
   let task4 = EngineTask4(inputString, resObj);
   let task5 = EngineTask5(inputString, resObj);
 
   let result = [];
   result.push(task1);
+  result.push(task2);
   result.push(task3);
   result.push(task4);
   result.push(task5);
@@ -261,6 +263,216 @@ function EngineTask1(inputString, resObj) {
     return false;
   }
 }
+function EngineTask2(inputString, resObj) {
+  let ptrRegexWeek = /\d{1,}\sminggu/g;
+  let ptrRegexDay = /\d{1,}\shari/g;
+
+  // a. Seluruh task yang sudah tercatat oleh assistant
+  // Contoh perintah yang dapat digunakan: “Apa saja deadline yang dimiliki
+  // sejauh ini?”
+
+  let kataKunci = ['hari ini'];
+  let keyword = ['kuis', 'ujian', 'tucil', 'tubes', 'praktikum'];
+  let kataKunciA = ['milik'];
+  let kataKunciB = ['antara'];
+  let kataKunciC = ['minggu ke depan'];
+  let id_tugas = getIDTask(inputString);
+  let id_date = getAllDate(inputString);
+  let timeNow = new Date();
+  let dateNow = formatDate(timeNow);
+
+  let convertDay = getConvert(inputString, ptrRegexDay);
+  let convertWeek = getConvert(inputString, ptrRegexWeek);
+
+  kataKunci.forEach((item) => {
+    let result = KMP(inputString, item);
+
+    if (result != -1) {
+      kataKunci = item;
+    } else {
+      kataKunci = false;
+    }
+  });
+
+  let keywordAsu = ["asu"];
+
+  keyword.forEach((item) => {
+    let result = KMP(inputString, item);
+
+    if (result != -1) {
+      keywordAsu = item;
+    }
+  });
+
+  if (kataKunci != false) {
+
+    let sql = 'asu';
+    // console.log(keywordAsu);
+    // console.log(keywordAsu==['asu']);
+    if (keywordAsu != "asu"){
+      sql = `SELECT T.* FROM (
+        SELECT a.*
+        FROM jadwal a
+        WHERE a.tanggal ='${dateNow}'
+      ) AS T WHERE T.nama_tugas = '${keywordAsu}';
+      `;
+    }else{
+      sql = `SELECT * FROM jadwal WHERE tanggal ='${dateNow}'`;
+    }
+    DB.connection.query(sql, (err, res) => {
+      if (!err) {
+        res.forEach((item) => {
+          let x = JSON.parse(JSON.stringify(item));
+          let newDate = new Date(x.tanggal);
+          newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
+          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
+          resObj.send(resTask2);
+          // console.log("ID : "+x.id);
+          // console.log("ID TUGAS : "+x.id_tugas);
+          // console.log("TANGGAL : "+ newDate);
+          // console.log("KODE : "+x.kode);
+          // console.log("NAMA TUGAS : "+x.nama_tugas);
+          // console.log("DESKRIPSI : "+x.deskripsi);
+          // console.log("STATUS : "+x.status+"\n");
+        });
+      }else{
+        return false;
+      }
+    });
+  };
+  
+
+  if (convertDay != false) {
+    convertDay = parseInt(convertDay) * 86400000;
+    convertDay = new Date(timeNow.getTime() + convertDay);
+
+    let dateLater = formatDate(convertDay);
+
+    let sql = 'asu';
+    // console.log(keywordAsu==['asu']);
+    if (keywordAsu != "asu"){
+      sql = `SELECT T.* FROM (
+        SELECT a.*
+        FROM jadwal a
+        WHERE a.tanggal BETWEEN '${dateNow}' AND '${dateLater}'
+      ) AS T WHERE T.nama_tugas = '${keywordAsu}';
+      `;
+    }else{
+      sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
+    }
+    DB.connection.query(sql, (err, res) => {
+      if (!err) {
+        res.forEach((item) => {
+          let x = JSON.parse(JSON.stringify(item));
+          let newDate = new Date(x.tanggal);
+          newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
+          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
+          resObj.send(resTask2);
+        });
+      }else{
+        return false;
+      }
+    });
+  };
+  
+
+  if (convertWeek != false) {
+    convertWeek = parseInt(convertWeek) * 7 * 86400000;
+    convertWeek = new Date(timeNow.getTime() + convertWeek);
+
+    let dateLater = `${convertWeek.getFullYear()}-${convertWeek.getMonth()+1}-${convertWeek.getDate()}`;
+    let sql = 'asu';
+    // console.log(keywordAsu);
+    // console.log(keywordAsu==['asu']);
+    if (keywordAsu != "asu"){
+      sql = `SELECT T.* FROM (
+        SELECT a.*
+        FROM jadwal a
+        WHERE a.tanggal BETWEEN '${dateNow}' AND '${dateLater}'
+      ) AS T WHERE T.nama_tugas = '${keywordAsu}';
+      `;
+    }else{
+      sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
+    }
+    DB.connection.query(sql, (err, res) => {
+      if (!err) {
+        res.forEach((item) => {
+          let x = JSON.parse(JSON.stringify(item));
+          let newDate = new Date(x.tanggal);
+          newDate = `${newDate.getFullYear()}-${newDate.getMonth()+1}-${newDate.getDate()}`;
+          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
+          resObj.send(resTask2);
+        });
+      }else{
+        return false;
+      }
+    });
+  };
+
+  let date1 = id_date[0][0].getDate()+"/"+(id_date[0][0].getMonth()+1)+"/"+id_date[0][0].getFullYear();
+  let date2 = id_date[0][1].getDate()+"/"+(id_date[0][1].getMonth()+1)+"/"+id_date[0][1].getFullYear();
+  
+  // let newDate = new Date(id_date[0]);
+  // console.log(newDate);
+  // console.log(newDate.getTime());
+  // let mil = newDate.getTime() + 86400000;
+  // console.log(mil);
+  // let newDate2 = new Date(mil);
+  // console.log(newDate2.toDateString());
+  // let kunciA = " ";
+  let kunciB = " ";
+  // let kunciC = " ";
+
+  // kataKunciA.forEach((item) => {
+  //   if (KMP(inputString, item) != -1) {
+  //     kunciA = item;
+  //   }
+  // });
+
+  kataKunciB.forEach((item) => {
+    if (KMP(inputString, item) != -1) {
+      kunciB = item;
+    }
+  });
+
+  // if (kunciA != " ") {
+  //   DB.con.connect((err) => {  
+  //     if (err) throw err;
+  //     let sql = `SELECT * FROM jadwal`;
+  
+  //     DB.con.query(sql, (err, res) => {
+  //       if (!err) {    
+  //         res.forEach((item) => {
+  //           let x = JSON.parse(JSON.stringify(item));
+  //           console.log("ID : "+x.id);
+  //           console.log("ID TUGAS : "+x.id_tugas);
+  //           console.log("TANGGAL : "+x.tanggal);
+  //           console.log("KODE : "+x.kode);
+  //           console.log("NAMA TUGAS : "+x.nama_tugas);
+  //           console.log("DESKRIPSI : "+x.deskripsi);
+  //           console.log("STATUS : "+x.status+"\n");
+  //         });
+  //       }
+  //     });
+  //   });
+  if (kunciB != " ") {
+    
+    let sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${date1}' AND '${date2}'`;
+    // console.log(date1);
+    // console.log(date2);
+    DB.connection.query(sql, (err, res) => {
+      console.log(res);
+      if (!err) {
+        res.forEach((item) => {
+          let x = JSON.parse(JSON.stringify(item));
+          let resTask2 = "ID : "+x.id+"\nID TUGAS : "+x.id_tugas+"\nTANGGAL : "+ newDate+"\nKODE : "+x.kode+"\nNAMA TUGAS : "+x.nama_tugas+"\nDESKRIPSI : "+x.deskripsi+"\nSTATUS : "+x.status;
+          resObj.send(resTask2);
+        });
+      }
+    });
+  };
+  }
+
 
 function EngineTask3(inputString, resObj) {
   let kataKunci = ['Kapan', 'Bila', 'Waktu', 'Ketika'];
