@@ -211,7 +211,7 @@ function EngineTask2(inputString) {
   // sejauh ini?”
 
   let kataKunci = ['hari ini'];
-
+  let keyword = ['kuis', 'ujian', 'tucil', 'tubes', 'praktikum'];
   let kataKunciA = ['milik'];
   let kataKunciB = ['antara'];
   let kataKunciC = ['minggu ke depan'];
@@ -233,10 +233,33 @@ function EngineTask2(inputString) {
     }
   });
 
+  let keywordAsu = ["asu"];
+
+  keyword.forEach((item) => {
+    let result = KMP(inputString, item);
+
+    if (result != -1) {
+      keywordAsu = item;
+    }
+  });
+
   if (kataKunci != false) {
     DB.con.connect((err) => {  
       if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE tanggal='${dateNow}'`;
+
+      let sql = 'asu';
+      // console.log(keywordAsu);
+      // console.log(keywordAsu==['asu']);
+      if (keywordAsu != "asu"){
+        sql = `SELECT T.* FROM (
+          SELECT a.*
+          FROM jadwal a
+          WHERE a.tanggal ='${dateNow}'
+        ) AS T WHERE T.nama_tugas = '${keywordAsu}';
+        `;
+      }else{
+        sql = `SELECT * FROM jadwal WHERE tanggal ='${dateNow}'`;
+      }
       DB.con.query(sql, (err, res) => {
         if (!err) {
           res.forEach((item) => {
@@ -265,7 +288,18 @@ function EngineTask2(inputString) {
 
     DB.con.connect((err) => {  
       if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
+      let sql = 'asu';
+      // console.log(keywordAsu==['asu']);
+      if (keywordAsu != "asu"){
+        sql = `SELECT T.* FROM (
+          SELECT a.*
+          FROM jadwal a
+          WHERE a.tanggal BETWEEN '${dateNow}' AND '${dateLater}'
+        ) AS T WHERE T.nama_tugas = '${keywordAsu}';
+        `;
+      }else{
+        sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
+      }
       DB.con.query(sql, (err, res) => {
         if (!err) {
           res.forEach((item) => {
@@ -294,7 +328,19 @@ function EngineTask2(inputString) {
 
     DB.con.connect((err) => {  
       if (err) throw err;
-      let sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
+      let sql = 'asu';
+      // console.log(keywordAsu);
+      // console.log(keywordAsu==['asu']);
+      if (keywordAsu != "asu"){
+        sql = `SELECT T.* FROM (
+          SELECT a.*
+          FROM jadwal a
+          WHERE a.tanggal BETWEEN '${dateNow}' AND '${dateLater}'
+        ) AS T WHERE T.nama_tugas = '${keywordAsu}';
+        `;
+      }else{
+        sql = `SELECT * FROM jadwal WHERE tanggal BETWEEN '${dateNow}' AND '${dateLater}'`;
+      }
       DB.con.query(sql, (err, res) => {
         if (!err) {
           res.forEach((item) => {
