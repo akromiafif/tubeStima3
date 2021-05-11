@@ -19,7 +19,7 @@ app.get('/chat', function (req, res) {
 });
 
 app.get('/proccess/:taskDesc', function(req, res) {
-  EngineTask2(req.params.taskDesc.trim(), res);
+  runAllMain(req.params.taskDesc.trim(), res);
 });
  
 app.listen(3000);
